@@ -28,8 +28,8 @@ export default class Agent {
   }
 
   public async close () {
-    for (const mcp of this.mcps) {
-      await mcp.close();
+    for await (const mcp of this.mcps) {
+        await mcp.close();
     }
   }
 
@@ -39,15 +39,20 @@ export default class Agent {
         throw new Error('Agent is not initialized');
       }
       let res = await this.llm.chat(prompt);
-      console.log(`agent content res: ${res.content}`);
-      console.log(res.toolCalls)
+      if (!res) {
+        throw new Error('No response from agent');
+      }
+      // console.log(`agent content res: ${res.content}`);
+      // console.log(res.toolCalls)
       while (true) {
-        if (res?.toolCalls.length > 0) {
+        if (res.toolCalls.length > 0) {
           for (const toolCall of res.toolCalls) { 
-            const mcp = this.mcps.find((mcp) => mcp.getTools().find(tool => tool.name === toolCall.function?.name)); 
+            console.log(`tool call: ${JSON.stringify(toolCall)}`);
+            const mcp = this.mcps.find((mcp) => mcp.getTools().some(tool => tool.name === toolCall.function?.name)); 
             if (mcp) {
+              logMessage(`Invoking tool ${toolCall.function?.name} USE`, 'green');
               const result = await mcp.callTool(toolCall.function?.name || '', JSON.parse(toolCall.function?.arguments || '{}'));
-              console.log(`tool result: ${result}`);
+              console.log(`tool result: ${JSON.stringify(result)}`);
               this.llm.appendToolResult(toolCall.id as string, JSON.stringify(result));
             } else {
               this.llm.appendToolResult(toolCall.id as string, 'Tool not found');
