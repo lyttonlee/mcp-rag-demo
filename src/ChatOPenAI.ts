@@ -44,7 +44,7 @@ export default class ChatOpenAI {
         this.messages.push({role:'tool', content: result, tool_call_id: toolCallId}); 
     }
 
-    async chat (prompt?: string) {
+    async chat (prompt?: string): Promise<{content: string, toolCalls: ToolCall[]}> {
         logMessage(`Chatting with model ${this.model}...`, 'green');
         try {
             if (prompt) {
@@ -101,6 +101,7 @@ export default class ChatOpenAI {
             return {content: constent, toolCalls};
         }catch (error) {
             logMessage(`Error chatting with model: ${error}`, 'red');
+            throw error;
         } 
     }
 }
